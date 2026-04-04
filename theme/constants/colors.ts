@@ -8,11 +8,11 @@ export const COLORS = {
       "100": "#0F121100",
     },
     primary: {
-      "900": "#1E103FFF",
-      "700": "#4D2A85FF",
-      "500": "#8B5CF6FF",
-      "300": "#C4B5FDFF",
-      "100": "#EDE9FEFF",
+      "900": "#27114EFF",
+      "700": "#5C27CAFF",
+      "500": "#8547F7FF",
+      "300": "#C9B3FFFF",
+      "100": "#F2ECFFFF",
     },
     neutral: {
       "900": "#1B211DFF",

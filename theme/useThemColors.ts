@@ -9,5 +9,5 @@ export function useThemeColors(theme?: ThemeName): ThemeColors {
   const colorScheme = useColorScheme();
   const currentTheme = theme ?? (colorScheme === "dark" ? "dark" : "light");
 
-  return COLORS[currentTheme];
+  return COLORS["dark"];
 }
