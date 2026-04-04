@@ -5,23 +5,29 @@ import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { useThemeColors } from "@/theme/useThemColors";
+import { Keyboard, TouchableWithoutFeedback } from "react-native";
 
 function AppContent() {
+  const colors = useThemeColors();
+
   return (
     <SafeAreaProvider>
       <StatusBar style="auto" />
-      <SafeAreaView style={{ flex: 1, backgroundColor: "white" }}>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen
-            name="(auth)/index"
-            options={{ contentStyle: { backgroundColor: "white" } }}
-          />
-          <Stack.Screen
-            name="(tabs)"
-            options={{ contentStyle: { backgroundColor: "white" } }}
-          />
-        </Stack>
-      </SafeAreaView>
+      <TouchableWithoutFeedback
+        accessible={false}
+        onPress={() => {
+          Keyboard.dismiss();
+        }}
+      >
+        <SafeAreaView
+          style={{ flex: 1, backgroundColor: colors.background[900] }}
+        >
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" />
+          </Stack>
+        </SafeAreaView>
+      </TouchableWithoutFeedback>
     </SafeAreaProvider>
   );
 }
