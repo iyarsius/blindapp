@@ -35,7 +35,7 @@ export default function Logo({ rotated, state }: LogoProps) {
 
   const animatedStyle = useAnimatedStyle(() => {
     return {
-      columnGap: interpolate(fragmentProgress.value, [0, 1], [0, 16]),
+      columnGap: interpolate(fragmentProgress.value, [0, 1], [0, 20]),
       transform: [{ rotate: `${rotation.value}deg` }],
     };
   });
@@ -69,10 +69,10 @@ export default function Logo({ rotated, state }: LogoProps) {
       <Animated.View
         style={[
           {
-            width: 32,
+            width: 42,
             height: 72,
-            borderLeftWidth: 10,
-            borderBottomWidth: 10,
+            borderLeftWidth: 15,
+            borderBottomWidth: 15,
             borderBottomLeftRadius: 30,
           },
           strokeStyle,
@@ -81,27 +81,13 @@ export default function Logo({ rotated, state }: LogoProps) {
       <Animated.View
         style={[
           {
-            width: 32,
+            width: 42,
             height: 72,
-            borderRightWidth: 10,
-            borderBottomWidth: 10,
+            borderRightWidth: 15,
+            borderBottomWidth: 15,
             borderBottomRightRadius: 30,
           },
           strokeStyle,
-        ]}
-      ></Animated.View>
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          {
-            position: "absolute",
-            left: 30,
-            top: 0,
-            width: 4,
-            height: 62,
-            backgroundColor: colors.background[900],
-          },
-          seamMaskStyle,
         ]}
       ></Animated.View>
     </Animated.View>
