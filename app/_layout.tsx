@@ -16,6 +16,10 @@ function AppContent() {
             name="(auth)/index"
             options={{ contentStyle: { backgroundColor: "white" } }}
           />
+          <Stack.Screen
+            name="(tabs)"
+            options={{ contentStyle: { backgroundColor: "white" } }}
+          />
         </Stack>
       </SafeAreaView>
     </SafeAreaProvider>
