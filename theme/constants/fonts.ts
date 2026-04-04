@@ -1,0 +1,108 @@
+export const FONTS = {
+  heading: {
+    giant: {
+      fontSize: 36,
+      lineHeight: 40,
+      fontFamily: "inter",
+      fontWeight: "700",
+    },
+    large: {
+      fontSize: 32,
+      lineHeight: 36,
+      fontFamily: "inter",
+      fontWeight: "700",
+    },
+    medium: {
+      fontSize: 28,
+      lineHeight: 32,
+      fontFamily: "inter",
+      fontWeight: "700",
+    },
+    small: {
+      fontSize: 24,
+      lineHeight: 28,
+      fontFamily: "inter",
+      fontWeight: "700",
+    },
+    tiny: {
+      fontSize: 20,
+      lineHeight: 24,
+      fontFamily: "inter",
+      fontWeight: "700",
+    },
+  },
+  textBold: {
+    giant: {
+      fontSize: 18,
+      fontFamily: "inter",
+      fontWeight: "700",
+      lineHeight: 23,
+      letterSpacing: 0.5,
+    },
+    large: {
+      fontSize: 16,
+      fontFamily: "inter",
+      fontWeight: "700",
+      lineHeight: 20,
+      letterSpacing: 0.5,
+    },
+    medium: {
+      fontSize: 14,
+      fontFamily: "inter",
+      fontWeight: "700",
+      lineHeight: 17,
+      letterSpacing: 0.4,
+    },
+    small: {
+      fontSize: 12,
+      fontFamily: "inter",
+      fontWeight: "700",
+      lineHeight: 15,
+      letterSpacing: 0.3,
+    },
+    tiny: {
+      fontSize: 10,
+      fontFamily: "inter",
+      fontWeight: "700",
+      lineHeight: 12,
+      letterSpacing: 0.2,
+    },
+  },
+  text: {
+    giant: {
+      fontSize: 18,
+      fontFamily: "inter",
+      fontWeight: "300",
+      lineHeight: 23,
+      letterSpacing: 0.5,
+    },
+    large: {
+      fontSize: 16,
+      fontFamily: "inter",
+      fontWeight: "300",
+      lineHeight: 20,
+      letterSpacing: 0.5,
+    },
+    medium: {
+      fontSize: 14,
+      fontFamily: "inter",
+      fontWeight: "300",
+      lineHeight: 17,
+      letterSpacing: 0.4,
+    },
+    small: {
+      fontSize: 12,
+      fontFamily: "inter",
+      fontWeight: "300",
+      lineHeight: 15,
+      letterSpacing: 0.3,
+    },
+    tiny: {
+      fontSize: 10,
+      fontFamily: "inter",
+      fontWeight: "300",
+      lineHeight: 12,
+      letterSpacing: 0.2,
+    },
+  },
+};
