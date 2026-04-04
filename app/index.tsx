@@ -1,4 +1,5 @@
 import BottomSheet from "@/components/BottomSheet";
+import KeyboardSpacer from "@/components/KeyboardSpacer";
 import TokenSelector from "@/components/TokenSelector";
 import TabSelector from "@/components/TabSelector";
 import { useThemeColors } from "@/theme/useThemColors";
@@ -42,15 +43,7 @@ export default function Home() {
       <Pressable onPress={() => setLogoRotate(!logoRotate)}>
         <Logo rotated={logoRotate} state={logoState}></Logo>
       </Pressable>
-      <View
-        style={{
-          alignItems: "center",
-          justifyContent: "center",
-          width: "100%",
-          paddingTop: 30,
-          paddingHorizontal: 100,
-        }}
-      >
+      <View style={{ width: "100%", paddingHorizontal: 100, paddingTop: 40 }}>
         <TabSelector
           tabs={[
             {
@@ -70,42 +63,64 @@ export default function Home() {
             setTab(key);
           }}
         ></TabSelector>
-        <View style={{ paddingTop: 80 }}>
-          <Text
-            style={[
-              fontStyle("heading", "giant"),
-              { color: colors.neutral[500], fontSize: 52 },
-            ]}
-          >
-            0.00
-          </Text>
-        </View>
-        <View style={{ paddingTop: 30 }}>
-          <TokenSelector
-            ticker="ETH"
-            accentProgress={accentProgress}
-            onPress={() => {
-              setIsTokenSheetVisible(true);
-            }}
-          />
-        </View>
       </View>
       <View
         style={{
-          paddingTop: 50,
-          paddingHorizontal: 24,
+          flex: 1,
+          alignItems: "center",
           width: "100%",
-          gap: 24,
         }}
       >
-        <Input
-          accentProgress={accentProgress}
-          placeholder={destinationPlaceholder}
-        ></Input>
-        <Button accentProgress={accentProgress} onPress={() => {}}>
-          Send
-        </Button>
+        <View style={{ flex: 1, width: "100%" }}>
+          <View
+            style={{
+              flex: 1,
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <View>
+              <Text
+                style={[
+                  fontStyle("heading", "giant"),
+                  { color: colors.neutral[500], fontSize: 52 },
+                ]}
+              >
+                0.00
+              </Text>
+            </View>
+            <View style={{ paddingTop: 30 }}>
+              <TokenSelector
+                ticker="ETH"
+                accentProgress={accentProgress}
+                onPress={() => {
+                  setIsTokenSheetVisible(true);
+                }}
+              />
+            </View>
+          </View>
+        </View>
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "flex-end",
+            paddingHorizontal: 24,
+            paddingBottom: 24,
+            width: "100%",
+            gap: 24,
+          }}
+        >
+          <Input
+            accentProgress={accentProgress}
+            placeholder={destinationPlaceholder}
+          ></Input>
+          <Button accentProgress={accentProgress} onPress={() => {}}>
+            Send
+          </Button>
+        </View>
       </View>
+
+      <KeyboardSpacer />
 
       <BottomSheet
         visible={isTokenSheetVisible}

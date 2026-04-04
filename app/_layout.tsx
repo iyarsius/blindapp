@@ -7,6 +7,7 @@ import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useThemeColors } from "@/theme/useThemColors";
 import { Keyboard, TouchableWithoutFeedback } from "react-native";
+import KeyboardRoot from "@/components/KeyboardRoot";
 
 function AppContent() {
   const colors = useThemeColors();
@@ -49,7 +50,9 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <AppContent />
+      <KeyboardRoot>
+        <AppContent />
+      </KeyboardRoot>
     </GestureHandlerRootView>
   );
 }
