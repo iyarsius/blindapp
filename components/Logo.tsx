@@ -5,6 +5,7 @@ import Animated, {
   interpolateColor,
   useAnimatedStyle,
   useSharedValue,
+  withSpring,
   withTiming,
 } from "react-native-reanimated";
 import { useThemeColors } from "@/theme/useThemColors";
@@ -20,9 +21,10 @@ export default function Logo({ rotated, state }: LogoProps) {
   const fragmentProgress = useSharedValue(state === "fragmented" ? 1 : 0);
 
   useEffect(() => {
-    rotation.value = withTiming(rotated ? 180 : 0, {
-      duration: 350,
-      easing: Easing.out(Easing.cubic),
+    rotation.value = withSpring(rotated ? 180 : 0, {
+      stiffness: 220,
+      damping: 16,
+      mass: 0.9,
     });
   }, [rotated, rotation]);
 
@@ -36,7 +38,7 @@ export default function Logo({ rotated, state }: LogoProps) {
   const animatedStyle = useAnimatedStyle(() => {
     return {
       columnGap: interpolate(fragmentProgress.value, [0, 1], [0, 20]),
-      transform: [{ rotate: `${rotation.value}deg` }],
+      transform: [{ perspective: 800 }, { rotateX: `${rotation.value}deg` }],
     };
   });
 
