@@ -32,7 +32,7 @@ export default function Auth() {
       <View style={{ flex: 1, justifyContent: "flex-end" }}>
         <Button
           onPress={() => {
-            router.push("/(pages)/Home");
+            router.push("/(tabs)/Home");
           }}
         >
           Create Wallet
