@@ -1,4 +1,5 @@
 import { useThemeColors } from "@/theme/useThemColors";
+import { fontStyle } from "@/theme/utils";
 import { Pressable, Text } from "react-native";
 
 export interface ButtonParams {
@@ -20,7 +21,14 @@ export default function Button({ children, onPress }: ButtonParams) {
       }}
       onPress={onPress}
     >
-      <Text style={{ color: "white" }}>{children}</Text>
+      <Text
+        style={[
+          fontStyle("textBold", "medium"),
+          { color: colors.primary[900] },
+        ]}
+      >
+        {children}
+      </Text>
     </Pressable>
   );
 }
