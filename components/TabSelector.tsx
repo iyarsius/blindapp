@@ -8,7 +8,9 @@ import {
 import { useEffect } from "react";
 import { Pressable, StyleProp, Text, View, ViewStyle } from "react-native";
 import Animated, {
+  interpolateColor,
   ReduceMotion,
+  SharedValue,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
@@ -27,6 +29,8 @@ export interface TabSelectorProps {
   selectedTab?: string;
   size?: Size;
   variant?: TabSelectorVariant;
+  selectedBackgroundColor?: string;
+  accentProgress?: SharedValue<number>;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -63,6 +67,8 @@ export default function TabSelector({
   selectedTab,
   size = "medium",
   variant = "primary",
+  selectedBackgroundColor,
+  accentProgress,
   style,
 }: TabSelectorProps) {
   const colors = useThemeColors();
@@ -96,6 +102,13 @@ export default function TabSelector({
     return {
       width: tabWidth,
       transform: [{ translateX: inset + selectedIndex.value * tabWidth }],
+      backgroundColor: accentProgress
+        ? interpolateColor(
+            accentProgress.value,
+            [0, 1],
+            [colors.neutral[100], colors.primary[500]],
+          )
+        : selectedBackgroundColor ?? tabColors.background,
     };
   });
 
@@ -129,7 +142,6 @@ export default function TabSelector({
             top: 4,
             bottom: 4,
             borderRadius: 30,
-            backgroundColor: tabColors.background,
           },
           backgroundAnimatedStyle,
         ]}

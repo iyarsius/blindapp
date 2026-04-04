@@ -50,12 +50,6 @@ export default function Logo({ rotated, state }: LogoProps) {
     };
   });
 
-  const seamMaskStyle = useAnimatedStyle(() => {
-    return {
-      opacity: 1 - fragmentProgress.value,
-    };
-  });
-
   return (
     <Animated.View
       style={[

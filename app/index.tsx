@@ -3,11 +3,12 @@ import TokenSelector from "@/components/TokenSelector";
 import TabSelector from "@/components/TabSelector";
 import { useThemeColors } from "@/theme/useThemColors";
 import { fontStyle } from "@/theme/utils";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import Input from "@/components/Input";
 import Button from "@/components/Button";
 import Logo from "@/components/Logo";
+import { Easing, useSharedValue, withTiming } from "react-native-reanimated";
 
 export default function Home() {
   const colors = useThemeColors();
@@ -15,6 +16,18 @@ export default function Home() {
   const [isTokenSheetVisible, setIsTokenSheetVisible] = useState(false);
   const [logoState, setLogoState] = useState<"normal" | "fragmented">("normal");
   const [logoRotate, setLogoRotate] = useState(false);
+  const accentProgress = useSharedValue(tab === "private" ? 1 : 0);
+  const destinationPlaceholder =
+    tab === "private"
+      ? "unlink1... destination address"
+      : "0x destination address";
+
+  useEffect(() => {
+    accentProgress.value = withTiming(tab === "private" ? 1 : 0, {
+      duration: 250,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [accentProgress, tab]);
 
   return (
     <View
@@ -50,6 +63,7 @@ export default function Home() {
             },
           ]}
           size="small"
+          accentProgress={accentProgress}
           selectedTab={tab}
           onTabPress={(key) => {
             setLogoState(key === "public" ? "normal" : "fragmented");
@@ -69,6 +83,7 @@ export default function Home() {
         <View style={{ paddingTop: 30 }}>
           <TokenSelector
             ticker="ETH"
+            accentProgress={accentProgress}
             onPress={() => {
               setIsTokenSheetVisible(true);
             }}
@@ -83,8 +98,13 @@ export default function Home() {
           gap: 24,
         }}
       >
-        <Input placeholder="0x destination address"></Input>
-        <Button onPress={() => {}}>Send</Button>
+        <Input
+          accentProgress={accentProgress}
+          placeholder={destinationPlaceholder}
+        ></Input>
+        <Button accentProgress={accentProgress} onPress={() => {}}>
+          Send
+        </Button>
       </View>
 
       <BottomSheet
