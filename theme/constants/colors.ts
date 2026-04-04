@@ -8,11 +8,11 @@ export const COLORS = {
       "100": "#0F121100",
     },
     primary: {
-      "900": "#0A2618FF",
-      "700": "#1C593AFF",
-      "500": "#40B87CFF",
-      "300": "#94E0BBFF",
-      "100": "#C6F7DFFF",
+      "900": "#1E103FFF",
+      "700": "#4D2A85FF",
+      "500": "#8B5CF6FF",
+      "300": "#C4B5FDFF",
+      "100": "#EDE9FEFF",
     },
     neutral: {
       "900": "#1B211DFF",
@@ -45,11 +45,11 @@ export const COLORS = {
       "100": "#F7F7F700",
     },
     primary: {
-      "900": "#E1F5EBFF",
-      "700": "#ACE5C9FF",
-      "500": "#5ED198FF",
-      "300": "#1B6B43FF",
-      "100": "#042615FF",
+      "900": "#F3EEFFFF",
+      "700": "#DDD0FFFF",
+      "500": "#A78BFAFF",
+      "300": "#5B21B6FF",
+      "100": "#240046FF",
     },
     neutral: {
       "900": "#FFFFFFFF",
