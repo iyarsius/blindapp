@@ -1,4 +1,4 @@
-import { useThemColors } from "@/theme/useThemColors";
+import { useThemeColors } from "@/theme/useThemColors";
 import { Pressable, Text } from "react-native";
 
 export interface ButtonParams {
@@ -7,7 +7,7 @@ export interface ButtonParams {
 }
 
 export default function Button({ children, onPress }: ButtonParams) {
-  const colors = useThemColors();
+  const colors = useThemeColors();
   return (
     <Pressable
       style={{

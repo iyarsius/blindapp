@@ -1,11 +1,11 @@
 import Button from "@/components/Button";
-import { useThemColors } from "@/theme/useThemColors";
+import { useThemeColors } from "@/theme/useThemColors";
 import { componentSpacing, fontStyle } from "@/theme/utils";
 import { router } from "expo-router";
 import { Text, View } from "react-native";
 
 export default function Auth() {
-  const colors = useThemColors();
+  const colors = useThemeColors();
 
   return (
     <View
