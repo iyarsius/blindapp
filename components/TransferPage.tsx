@@ -38,6 +38,7 @@ export default function TransferPage({ action }: { action: TransferAction }) {
   const {
     isInitializing,
     walletError,
+    walletWarning,
     privateAddress,
     publicAddress,
     tokens,
@@ -342,6 +343,19 @@ export default function TransferPage({ action }: { action: TransferAction }) {
                 {walletError ?? formError ?? amountError}
               </Text>
             ) : null}
+            {walletWarning && !walletError ? (
+              <Text
+                style={[
+                  fontStyle("text", "small"),
+                  {
+                    color: colors.neutral[300],
+                    paddingBottom: 16,
+                  },
+                ]}
+              >
+                {walletWarning}
+              </Text>
+            ) : null}
             <KeyboardSpacer enabled={activeKeyboardTarget === "address"} />
             <Button
               accentProgress={accentProgress}
@@ -433,6 +447,16 @@ export default function TransferPage({ action }: { action: TransferAction }) {
                   ]}
                 >
                   {faucetState.error}
+                </Text>
+              ) : null}
+              {walletWarning && !walletError ? (
+                <Text
+                  style={[
+                    fontStyle("text", "small"),
+                    { color: colors.neutral[300], textAlign: "center" },
+                  ]}
+                >
+                  {walletWarning}
                 </Text>
               ) : null}
               <CopyAddressButton

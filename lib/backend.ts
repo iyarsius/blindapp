@@ -17,6 +17,11 @@ export interface TransferReceipt {
   [key: string]: unknown;
 }
 
+export interface SweepDeposit {
+  address: string;
+  amount: string;
+}
+
 export type FaucetTarget = "eoa" | "unlink";
 
 const DEFAULT_BACKEND_URL = "https://api.blindapp.space";
@@ -48,12 +53,13 @@ function extractApiError(payload: unknown) {
 }
 
 async function request<T>(path: string, init?: RequestInit) {
+  const url = `${getBackendUrl()}${path}`;
   const headers = new Headers(init?.headers);
   if (init?.body && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(`${getBackendUrl()}${path}`, {
+  const response = await fetch(url, {
     ...init,
     headers,
   });
@@ -70,8 +76,11 @@ async function request<T>(path: string, init?: RequestInit) {
   }
 
   if (!response.ok) {
+    const errorMessage =
+      extractApiError(payload) ?? `Backend request failed with ${response.status}.`;
+
     throw new Error(
-      extractApiError(payload) ?? `Backend request failed with ${response.status}.`,
+      `${init?.method ?? "GET"} ${path} failed with ${response.status}: ${errorMessage}`,
     );
   }
 
@@ -104,6 +113,36 @@ export async function getPrivateBalances(wallet: StoredWallet) {
   return request<{ balances: unknown[] }>("/wallet/unlink", {
     method: "POST",
     body: JSON.stringify(wallet),
+  });
+}
+
+export async function getSweepableDeposits(wallet: StoredWallet) {
+  const response = await request<{ tokensToDeposit: SweepDeposit[] }>(
+    "/wallet/sweep",
+    {
+      method: "POST",
+      body: JSON.stringify({ evmPrivateKey: wallet.evmPrivateKey }),
+    },
+  );
+
+  return response.tokensToDeposit;
+}
+
+export async function depositFromEoa(
+  wallet: StoredWallet,
+  params: {
+    tokenAddress: string;
+    amount: string;
+  },
+) {
+  return request<TransferReceipt>("/deposit", {
+    method: "POST",
+    body: JSON.stringify({
+      unlinkMnemonic: wallet.unlinkMnemonic,
+      evmPrivateKey: wallet.evmPrivateKey,
+      token: params.tokenAddress,
+      amount: params.amount,
+    }),
   });
 }
 

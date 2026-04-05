@@ -1,7 +1,9 @@
 import { TransferScope } from "@/constants/transfer";
 import {
+  depositFromEoa,
   getPrivateBalances,
   getPrivateWalletAddress,
+  getSweepableDeposits,
   getSupportedTokens,
   initWallet,
   requestFaucet,
@@ -11,7 +13,15 @@ import {
   TransferReceipt,
 } from "@/lib/backend";
 import { readStoredWallet, saveStoredWallet } from "@/lib/walletStorage";
-import { createContext, ReactNode, useContext, useEffect, useState } from "react";
+import {
+  useCallback,
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 export interface QueuedTransfer {
   scope: TransferScope;
@@ -35,6 +45,7 @@ interface FaucetState {
 interface WalletContextValue {
   isInitializing: boolean;
   walletError: string | null;
+  walletWarning: string | null;
   privateAddress: string | null;
   publicAddress: string | null;
   tokens: SupportedToken[];
@@ -179,22 +190,71 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   );
   const [faucetState, setFaucetState] = useState<FaucetState>(DEFAULT_FAUCET_STATE);
   const [walletError, setWalletError] = useState<string | null>(null);
+  const [walletWarning, setWalletWarning] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
+  const autoSweepPromiseRef = useRef<Promise<boolean> | null>(null);
 
   const selectedToken =
     tokens.find((token) => token.address === selectedTokenAddress) ?? tokens[0] ?? null;
 
-  async function refreshWalletSnapshot(nextWallet: StoredWallet, nextTokens: SupportedToken[]) {
-    const [addressResponse, balancesResponse] = await Promise.all([
-      getPrivateWalletAddress(nextWallet),
-      getPrivateBalances(nextWallet),
-    ]);
+  const autoSweepPublicBalances = useCallback(async (nextWallet: StoredWallet) => {
+    if (autoSweepPromiseRef.current) {
+      return autoSweepPromiseRef.current;
+    }
 
-    setPrivateAddress(addressResponse.address);
-    setPrivateBalancesByToken(
-      normalizePrivateBalances(balancesResponse.balances, nextTokens),
-    );
-  }
+    const sweepPromise = (async () => {
+      const tokensToDeposit = await getSweepableDeposits(nextWallet);
+      if (tokensToDeposit.length === 0) {
+        return false;
+      }
+
+      await Promise.all(
+        tokensToDeposit.map(({ address, amount }) =>
+          depositFromEoa(nextWallet, {
+            tokenAddress: address,
+            amount,
+          }),
+        ),
+      );
+
+      return true;
+    })();
+
+    autoSweepPromiseRef.current = sweepPromise;
+
+    try {
+      return await sweepPromise;
+    } finally {
+      if (autoSweepPromiseRef.current === sweepPromise) {
+        autoSweepPromiseRef.current = null;
+      }
+    }
+  }, []);
+
+  const refreshWalletSnapshot = useCallback(
+    async (nextWallet: StoredWallet, nextTokens: SupportedToken[]) => {
+      try {
+        await autoSweepPublicBalances(nextWallet);
+        setWalletWarning(null);
+      } catch (error) {
+        console.warn("Auto-sweep failed", error);
+        setWalletWarning(
+          "Public wallet has funds waiting to sweep, but it may be missing gas.",
+        );
+      }
+
+      const [addressResponse, balancesResponse] = await Promise.all([
+        getPrivateWalletAddress(nextWallet),
+        getPrivateBalances(nextWallet),
+      ]);
+
+      setPrivateAddress(addressResponse.address);
+      setPrivateBalancesByToken(
+        normalizePrivateBalances(balancesResponse.balances, nextTokens),
+      );
+    },
+    [autoSweepPublicBalances],
+  );
 
   useEffect(() => {
     let isCancelled = false;
@@ -254,7 +314,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     return () => {
       isCancelled = true;
     };
-  }, []);
+  }, [refreshWalletSnapshot]);
 
   async function refreshWallet() {
     if (!wallet) {
@@ -355,10 +415,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   return (
     <WalletContext.Provider
-      value={{
-        isInitializing,
-        walletError,
-        privateAddress,
+        value={{
+          isInitializing,
+          walletError,
+          walletWarning,
+          privateAddress,
         publicAddress: wallet?.evmAddress ?? null,
         tokens,
         selectedToken,
