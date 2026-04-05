@@ -1,15 +1,17 @@
 import Button from "@/components/Button";
 import { useTransferContext } from "@/components/TransferContext";
+import { useWalletContext } from "@/components/WalletContext";
 import { buildTransferRoute } from "@/constants/transfer";
 import { useThemeColors } from "@/theme/useThemColors";
 import { fontStyle } from "@/theme/utils";
+import { formatBaseUnits } from "@/utils/tokenAmount";
+import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
-import { Text, View } from "react-native";
+import { InteractionManager, Text, View } from "react-native";
 import Animated, {
   Easing,
   ReduceMotion,
-  interpolateColor,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
@@ -17,10 +19,13 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
+const SUCCESS_GREEN = "#4ADE80";
+
 export default function TransferSuccessScreen() {
   const router = useRouter();
   const colors = useThemeColors();
   const { accentProgress } = useTransferContext();
+  const { pendingTransfer, clearTransferFlow } = useWalletContext();
   const haloScale = useSharedValue(0.88);
   const haloOpacity = useSharedValue(0);
   const badgeScale = useSharedValue(0.84);
@@ -66,48 +71,33 @@ export default function TransferSuccessScreen() {
         reduceMotion: ReduceMotion.System,
       }),
     );
-  }, [badgeOpacity, badgeScale, checkProgress, contentOpacity, haloOpacity, haloScale]);
+  }, [
+    badgeOpacity,
+    badgeScale,
+    checkProgress,
+    contentOpacity,
+    haloOpacity,
+    haloScale,
+  ]);
 
   const animatedHaloStyle = useAnimatedStyle(() => ({
-    backgroundColor: interpolateColor(
-      accentProgress.value,
-      [0, 1],
-      [colors.neutral[700], colors.primary[500]],
-    ),
+    backgroundColor: SUCCESS_GREEN,
     opacity: haloOpacity.value * 0.18,
     transform: [{ scale: haloScale.value }],
   }));
 
   const animatedBadgeStyle = useAnimatedStyle(() => ({
-    backgroundColor: interpolateColor(
-      accentProgress.value,
-      [0, 1],
-      [colors.neutral[100], colors.primary[300]],
-    ),
+    backgroundColor: SUCCESS_GREEN,
     opacity: badgeOpacity.value,
     transform: [{ scale: badgeScale.value }],
   }));
 
-  const animatedCheckShortStyle = useAnimatedStyle(() => ({
-    backgroundColor: colors.primary[900],
-    transform: [
-      { translateX: -10 },
-      { translateY: 8 },
-      { rotate: "45deg" },
-      { scaleY: checkProgress.value },
-    ],
+  const animatedCheckStyle = useAnimatedStyle(() => ({
     opacity: checkProgress.value,
-  }));
-
-  const animatedCheckLongStyle = useAnimatedStyle(() => ({
-    backgroundColor: colors.primary[900],
     transform: [
-      { translateX: 10 },
-      { translateY: 0 },
-      { rotate: "-45deg" },
-      { scaleY: checkProgress.value },
+      { scale: 0.72 + checkProgress.value * 0.28 },
+      { translateY: (1 - checkProgress.value) * 6 },
     ],
-    opacity: checkProgress.value,
   }));
 
   const animatedContentStyle = useAnimatedStyle(() => ({
@@ -126,7 +116,14 @@ export default function TransferSuccessScreen() {
         paddingBottom: 28,
       }}
     >
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          paddingBottom: 56,
+        }}
+      >
         <View
           style={{
             width: 220,
@@ -162,38 +159,22 @@ export default function TransferSuccessScreen() {
               animatedBadgeStyle,
             ]}
           >
-            <View style={{ width: 40, height: 28 }}>
-              <Animated.View
-                style={[
-                  {
-                    position: "absolute",
-                    left: 0,
-                    bottom: 0,
-                    width: 6,
-                    height: 18,
-                    borderRadius: 3,
-                  },
-                  animatedCheckShortStyle,
-                ]}
+            <Animated.View style={animatedCheckStyle}>
+              <MaterialIcons
+                name="check"
+                size={56}
+                color={colors.background[900]}
               />
-              <Animated.View
-                style={[
-                  {
-                    position: "absolute",
-                    right: 4,
-                    bottom: 2,
-                    width: 6,
-                    height: 34,
-                    borderRadius: 3,
-                  },
-                  animatedCheckLongStyle,
-                ]}
-              />
-            </View>
+            </Animated.View>
           </Animated.View>
         </View>
 
-        <Animated.View style={[{ marginTop: 40, alignItems: "center", gap: 12 }, animatedContentStyle]}>
+        <Animated.View
+          style={[
+            { marginTop: 40, alignItems: "center", gap: 12 },
+            animatedContentStyle,
+          ]}
+        >
           <Text
             style={[
               fontStyle("heading", "large"),
@@ -205,10 +186,21 @@ export default function TransferSuccessScreen() {
           <Text
             style={[
               fontStyle("text", "medium"),
-              { color: colors.neutral[300], textAlign: "center", maxWidth: 280 },
+              {
+                color: colors.neutral[300],
+                textAlign: "center",
+                maxWidth: 280,
+              },
             ]}
           >
-            Funds delivered successfully. You can start another transfer whenever you're ready.
+            {pendingTransfer
+              ? `${formatBaseUnits(
+                  pendingTransfer.amountBaseUnits,
+                  pendingTransfer.token.decimals,
+                )} ${pendingTransfer.token.symbol} delivered ${
+                  pendingTransfer.scope === "private" ? "privately" : "publicly"
+                }.`
+              : "Funds delivered successfully. You can start another transfer whenever you're ready."}
           </Text>
         </Animated.View>
       </View>
@@ -218,6 +210,9 @@ export default function TransferSuccessScreen() {
           accentProgress={accentProgress}
           onPress={() => {
             router.replace(buildTransferRoute("send"));
+            InteractionManager.runAfterInteractions(() => {
+              clearTransferFlow();
+            });
           }}
         >
           Done

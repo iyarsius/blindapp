@@ -14,7 +14,14 @@ import { formatBaseUnits, parseAmountToBaseUnits } from "@/utils/tokenAmount";
 import { useIsFocused } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import {
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import Animated, {
   Easing,
   ReduceMotion,
@@ -38,6 +45,7 @@ export default function TransferPage({ action }: { action: TransferAction }) {
     privateBalancesByToken,
     faucetState,
     setSelectedToken,
+    refreshWallet,
     requestTestTokens,
     queueTransfer,
   } = useWalletContext();
@@ -47,6 +55,7 @@ export default function TransferPage({ action }: { action: TransferAction }) {
   const [recipient, setRecipient] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [isAmountFocused, setIsAmountFocused] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeKeyboardTarget, setActiveKeyboardTarget] = useState<
     "amount" | "address" | null
   >(null);
@@ -167,6 +176,20 @@ export default function TransferPage({ action }: { action: TransferAction }) {
     }
   }
 
+  async function handleRefresh() {
+    if (isInitializing || isRefreshing) {
+      return;
+    }
+
+    setIsRefreshing(true);
+
+    try {
+      await refreshWallet();
+    } finally {
+      setIsRefreshing(false);
+    }
+  }
+
   return (
     <Animated.View
       style={[
@@ -175,7 +198,23 @@ export default function TransferPage({ action }: { action: TransferAction }) {
       ]}
     >
       {action === "send" ? (
-        <>
+        <ScrollView
+          style={{ width: "100%" }}
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+          alwaysBounceVertical
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={() => {
+                void handleRefresh();
+              }}
+              tintColor={accentColor}
+              colors={[accentColor]}
+              progressBackgroundColor={colors.background[900]}
+            />
+          }
+        >
           <View style={{ flex: 1, width: "100%" }}>
             <View
               style={{
@@ -303,9 +342,25 @@ export default function TransferPage({ action }: { action: TransferAction }) {
               Send
             </Button>
           </View>
-        </>
+        </ScrollView>
       ) : (
-        <>
+        <ScrollView
+          style={{ width: "100%" }}
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+          alwaysBounceVertical
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={() => {
+                void handleRefresh();
+              }}
+              tintColor={accentColor}
+              colors={[accentColor]}
+              progressBackgroundColor={colors.background[900]}
+            />
+          }
+        >
           <View
             style={{
               flex: 1,
@@ -381,7 +436,7 @@ export default function TransferPage({ action }: { action: TransferAction }) {
               />
             </View>
           ) : null}
-        </>
+        </ScrollView>
       )}
 
       {action === "send" ? (

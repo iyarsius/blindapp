@@ -1,9 +1,12 @@
+import Button from "@/components/Button";
 import { useTransferContext } from "@/components/TransferContext";
+import { useWalletContext } from "@/components/WalletContext";
+import { buildTransferRoute } from "@/constants/transfer";
 import { useThemeColors } from "@/theme/useThemColors";
 import { fontStyle } from "@/theme/utils";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Text, View } from "react-native";
+import { InteractionManager, Text, View } from "react-native";
 import Animated, {
   Easing,
   ReduceMotion,
@@ -117,16 +120,32 @@ export default function TransferProgressScreen() {
   const router = useRouter();
   const colors = useThemeColors();
   const { accentProgress } = useTransferContext();
+  const {
+    pendingTransfer,
+    transferState,
+    submitPendingTransfer,
+    clearTransferFlow,
+  } = useWalletContext();
   const pulse = useSharedValue(0);
   const drift = useSharedValue(0);
   const statusOpacity = useSharedValue(1);
   const [statusIndex, setStatusIndex] = useState(0);
 
   useEffect(() => {
-    const completionTimeoutId = setTimeout(() => {
-      router.replace("/success");
-    }, 6200);
+    if (!pendingTransfer || transferState.status !== "idle") {
+      return;
+    }
 
+    void submitPendingTransfer();
+  }, [pendingTransfer, submitPendingTransfer, transferState.status]);
+
+  useEffect(() => {
+    if (transferState.status === "succeeded") {
+      router.replace("/success");
+    }
+  }, [router, transferState.status]);
+
+  useEffect(() => {
     pulse.value = withRepeat(
       withSequence(
         withTiming(1, {
@@ -162,34 +181,40 @@ export default function TransferProgressScreen() {
     );
 
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
-    const intervalId = setInterval(() => {
-      statusOpacity.value = withTiming(0, {
-        duration: 180,
-        easing: Easing.out(Easing.quad),
-        reduceMotion: ReduceMotion.System,
-      });
+    const intervalId =
+      transferState.status === "running"
+        ? setInterval(() => {
+            statusOpacity.value = withTiming(0, {
+              duration: 180,
+              easing: Easing.out(Easing.quad),
+              reduceMotion: ReduceMotion.System,
+            });
 
-      timeoutId = setTimeout(() => {
-        setStatusIndex((current) => (current + 1) % STATUS_MESSAGES.length);
-        statusOpacity.value = withTiming(1, {
-          duration: 240,
-          easing: Easing.out(Easing.quad),
-          reduceMotion: ReduceMotion.System,
-        });
-      }, 180);
-    }, 2400);
+            timeoutId = setTimeout(() => {
+              setStatusIndex(
+                (current) => (current + 1) % STATUS_MESSAGES.length,
+              );
+              statusOpacity.value = withTiming(1, {
+                duration: 240,
+                easing: Easing.out(Easing.quad),
+                reduceMotion: ReduceMotion.System,
+              });
+            }, 180);
+          }, 2400)
+        : undefined;
 
     return () => {
-      clearTimeout(completionTimeoutId);
       cancelAnimation(pulse);
       cancelAnimation(drift);
       cancelAnimation(statusOpacity);
-      clearInterval(intervalId);
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
     };
-  }, [drift, pulse, router, statusOpacity]);
+  }, [drift, pulse, statusOpacity, transferState.status]);
 
   const animatedClusterStyle = useAnimatedStyle(() => {
     return {
@@ -232,6 +257,15 @@ export default function TransferProgressScreen() {
     };
   });
 
+  const title = pendingTransfer ? "Transfer in progress" : "No transfer queued";
+  const statusMessage = pendingTransfer
+    ? transferState.status === "failed"
+      ? (transferState.error ?? "The backend rejected the transfer.")
+      : transferState.status === "running"
+        ? STATUS_MESSAGES[statusIndex]
+        : "Preparing transfer..."
+    : "Go back to the send screen to prepare a transfer.";
+
   return (
     <View
       style={{
@@ -243,7 +277,14 @@ export default function TransferProgressScreen() {
         paddingBottom: 28,
       }}
     >
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          paddingBottom: 56,
+        }}
+      >
         <Animated.View
           style={[
             {
@@ -313,20 +354,45 @@ export default function TransferProgressScreen() {
               { color: colors.neutral[100] },
             ]}
           >
-            Transfer in progress
+            {title}
           </Text>
 
           <Animated.Text
             style={[
               fontStyle("text", "medium"),
-              { color: colors.neutral[300], minHeight: 24 },
+              {
+                color: colors.neutral[300],
+                minHeight: 24,
+                textAlign: "center",
+              },
               animatedStatusStyle,
             ]}
           >
-            {STATUS_MESSAGES[statusIndex]}
+            {statusMessage}
           </Animated.Text>
         </View>
       </View>
+
+      {transferState.status === "failed" || !pendingTransfer ? (
+        <View style={{ width: "100%" }}>
+          <Button
+            accentProgress={accentProgress}
+            onPress={() => {
+              if (transferState.status === "failed" && pendingTransfer) {
+                void submitPendingTransfer();
+                return;
+              }
+
+              router.replace(buildTransferRoute("send"));
+              InteractionManager.runAfterInteractions(() => {
+                clearTransferFlow();
+              });
+            }}
+          >
+            {transferState.status === "failed" ? "Retry" : "Back to transfer"}
+          </Button>
+        </View>
+      ) : null}
     </View>
   );
 }
