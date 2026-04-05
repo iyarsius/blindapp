@@ -8,9 +8,10 @@ import { useTransferContext } from "@/components/TransferContext";
 import { TransferAction } from "@/constants/transfer";
 import { useThemeColors } from "@/theme/useThemColors";
 import { fontStyle } from "@/theme/utils";
+import { useRouter } from "expo-router";
 import { useIsFocused } from "@react-navigation/native";
-import { useEffect, useState } from "react";
-import { Text, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { Text, TextInput, View } from "react-native";
 import Animated, {
   Easing,
   ReduceMotion,
@@ -19,15 +20,33 @@ import Animated, {
   withSpring,
   withTiming,
 } from "react-native-reanimated";
+import KeyboardSpacer from "@/components/KeyboardSpacer";
 
 export default function TransferPage({ action }: { action: TransferAction }) {
   const colors = useThemeColors();
+  const router = useRouter();
   const { scope, accentProgress } = useTransferContext();
   const isFocused = useIsFocused();
   const [isTokenSheetVisible, setIsTokenSheetVisible] = useState(false);
+  const [amount, setAmount] = useState("");
+  const [isAmountFocused, setIsAmountFocused] = useState(false);
+  const [activeKeyboardTarget, setActiveKeyboardTarget] = useState<
+    "amount" | "address" | null
+  >(null);
   const opacity = useSharedValue(isFocused ? 1 : 0);
   const scale = useSharedValue(isFocused ? 1 : 0.96);
   const translateY = useSharedValue(isFocused ? 0 : 14);
+  const tokenTicker = "ETH";
+
+  const handleAmountChange = useCallback((value: string) => {
+    const sanitized = value.replace(",", ".").replace(/[^\d.]/g, "");
+
+    if ((sanitized.match(/\./g) ?? []).length > 1) {
+      return;
+    }
+
+    setAmount(sanitized);
+  }, []);
 
   useEffect(() => {
     opacity.value = withTiming(isFocused ? 1 : 0, {
@@ -69,7 +88,12 @@ export default function TransferPage({ action }: { action: TransferAction }) {
       : "0x7E57B1Ff9A0D13C4E5f67890123456789AbCdEf0";
 
   return (
-    <Animated.View style={[{ flex: 1, alignItems: "center", width: "100%" }, animatedPageStyle]}>
+    <Animated.View
+      style={[
+        { flex: 1, alignItems: "center", width: "100%" },
+        animatedPageStyle,
+      ]}
+    >
       {action === "send" ? (
         <>
           <View style={{ flex: 1, width: "100%" }}>
@@ -78,21 +102,58 @@ export default function TransferPage({ action }: { action: TransferAction }) {
                 flex: 1,
                 justifyContent: "center",
                 alignItems: "center",
+                paddingBottom: 24,
               }}
             >
-              <View>
+              <View style={{ alignItems: "center", gap: 16 }}>
                 <Text
                   style={[
-                    fontStyle("heading", "giant"),
-                    { color: colors.neutral[500], fontSize: 52 },
+                    fontStyle("textBold", "small"),
+                    { color: colors.neutral[700] },
                   ]}
                 >
-                  0.00
+                  Available: 0.5016 ETH
                 </Text>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "flex-end",
+                    gap: 8,
+                  }}
+                >
+                  <TextInput
+                    value={amount}
+                    onChangeText={handleAmountChange}
+                    onFocus={() => {
+                      setIsAmountFocused(true);
+                      setActiveKeyboardTarget("amount");
+                    }}
+                    onBlur={() => {
+                      setIsAmountFocused(false);
+                    }}
+                    keyboardType="decimal-pad"
+                    cursorColor={colors.primary[500]}
+                    placeholder={isAmountFocused ? "" : "0.00"}
+                    placeholderTextColor={colors.neutral[500]}
+                    style={[
+                      fontStyle("heading", "giant"),
+                      {
+                        minWidth: 140,
+                        color: colors.neutral[100],
+                        fontSize: 52,
+                        lineHeight: 56,
+                        textAlign: "center",
+                        fontVariant: ["tabular-nums"],
+                        paddingVertical: 0,
+                        includeFontPadding: false,
+                      },
+                    ]}
+                  />
+                </View>
               </View>
-              <View style={{ paddingTop: 30 }}>
+              <View style={{ paddingTop: 16 }}>
                 <TokenSelector
-                  ticker="ETH"
+                  ticker={tokenTicker}
                   accentProgress={accentProgress}
                   onPress={() => {
                     setIsTokenSheetVisible(true);
@@ -104,17 +165,28 @@ export default function TransferPage({ action }: { action: TransferAction }) {
           <View
             style={{
               justifyContent: "flex-end",
-              paddingHorizontal: 24,
+              paddingHorizontal: 16,
               paddingBottom: 24,
               width: "100%",
-              gap: 24,
             }}
           >
-            <Input
+            <KeyboardSpacer enabled={activeKeyboardTarget === "amount"} />
+            <View style={{ paddingBottom: 24 }}>
+              <Input
+                accentProgress={accentProgress}
+                placeholder={addressPlaceholder}
+                onFocus={() => {
+                  setActiveKeyboardTarget("address");
+                }}
+              />
+            </View>
+            <KeyboardSpacer enabled={activeKeyboardTarget === "address"} />
+            <Button
               accentProgress={accentProgress}
-              placeholder={addressPlaceholder}
-            />
-            <Button accentProgress={accentProgress} onPress={() => {}}>
+              onPress={() => {
+                router.push("/progress");
+              }}
+            >
               Send
             </Button>
           </View>
@@ -136,10 +208,11 @@ export default function TransferPage({ action }: { action: TransferAction }) {
               accentProgress={accentProgress}
             />
           </View>
+
           <View
             style={{
               width: "100%",
-              paddingHorizontal: 24,
+              paddingHorizontal: 16,
               paddingBottom: 24,
             }}
           >

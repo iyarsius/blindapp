@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { useWindowDimensions } from "react-native";
 import { useKeyboardHandler } from "react-native-keyboard-controller";
 import Animated, {
@@ -16,10 +16,12 @@ const CLOSE_CONFIG = { duration: 320, easing: Easing.inOut(Easing.poly(3)) };
 
 export interface KeyboardSpacerProps {
   bottomOffset?: number;
+  enabled?: boolean;
 }
 
 export default function KeyboardSpacer({
   bottomOffset = 0,
+  enabled = true,
 }: KeyboardSpacerProps) {
   const { height: windowHeight } = useWindowDimensions();
   const spacerRef = useAnimatedRef<Animated.View>();
@@ -113,6 +115,24 @@ export default function KeyboardSpacer({
     })();
   }, [animateSpacerHeight, isSpacerMeasurable, keyboardHeight, refreshSpaceBelow, spacerHeight]);
 
+  useEffect(() => {
+    runOnUI(() => {
+      "worklet";
+
+      if (!enabled) {
+        spacerHeight.value = withTiming(0, CLOSE_CONFIG);
+
+        return;
+      }
+
+      if (!refreshSpaceBelow(true)) {
+        return;
+      }
+
+      animateSpacerHeight(keyboardHeight.value);
+    })();
+  }, [animateSpacerHeight, enabled, keyboardHeight, refreshSpaceBelow, spacerHeight]);
+
   useKeyboardHandler(
     {
       onStart: (event) => {
@@ -120,6 +140,10 @@ export default function KeyboardSpacer({
 
         isClosing.value = event.height === 0;
         keyboardHeight.value = event.height;
+
+        if (!enabled) {
+          return;
+        }
 
         if (!isSpacerMeasurable.value) {
           return;
@@ -136,6 +160,10 @@ export default function KeyboardSpacer({
 
         keyboardHeight.value = event.height;
 
+        if (!enabled) {
+          return;
+        }
+
         if (!isClosing.value) {
           setSpacerHeight(event.height);
         }
@@ -147,6 +175,10 @@ export default function KeyboardSpacer({
 
         keyboardHeight.value = event.height;
 
+        if (!enabled) {
+          return;
+        }
+
         if (event.height > previousKeyboardHeight) {
           isClosing.value = false;
           setSpacerHeight(event.height);
@@ -157,6 +189,10 @@ export default function KeyboardSpacer({
 
         keyboardHeight.value = event.height;
 
+        if (!enabled) {
+          return;
+        }
+
         if (!isClosing.value) {
           setSpacerHeight(event.height);
         }
@@ -164,6 +200,7 @@ export default function KeyboardSpacer({
     },
     [
       animateSpacerHeight,
+      enabled,
       isClosing,
       isSpacerMeasurable,
       keyboardHeight,

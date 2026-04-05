@@ -1,4 +1,3 @@
-import KeyboardSpacer from "@/components/KeyboardSpacer";
 import Logo from "@/components/Logo";
 import TabSelector from "@/components/TabSelector";
 import { TransferProvider } from "@/components/TransferContext";
@@ -18,7 +17,9 @@ export default function TransferLayout() {
   const colors = useThemeColors();
   const router = useRouter();
   const pathname = usePathname();
-  const action = normalizeTransferAction(pathname.split("/").at(-1));
+  const currentRoute = pathname.split("/").at(-1);
+  const isProgressScreen = currentRoute === "progress";
+  const action = normalizeTransferAction(currentRoute);
   const [scope, setScope] = useState<TransferScope>("public");
   const accentProgress = useSharedValue(scope === "private" ? 1 : 0);
 
@@ -43,7 +44,9 @@ export default function TransferLayout() {
         <Pressable
           onPress={() => {
             router.replace(
-              buildTransferRoute(action === "send" ? "receive" : "send"),
+              isProgressScreen
+                ? buildTransferRoute("send")
+                : buildTransferRoute(action === "send" ? "receive" : "send"),
             );
           }}
         >
@@ -52,24 +55,26 @@ export default function TransferLayout() {
             state={scope === "private" ? "fragmented" : "normal"}
           />
         </Pressable>
-        <View
-          style={{
-            width: "100%",
-            paddingHorizontal: 100,
-            paddingTop: 50,
-            gap: 16,
-          }}
-        >
-          <TabSelector
-            tabs={transferScopeTabs}
-            size="small"
-            accentProgress={accentProgress}
-            selectedTab={scope}
-            onTabPress={(nextScope) => {
-              setScope(nextScope as TransferScope);
+        {isProgressScreen ? null : (
+          <View
+            style={{
+              width: "100%",
+              paddingHorizontal: 100,
+              paddingTop: 50,
+              gap: 16,
             }}
-          />
-        </View>
+          >
+            <TabSelector
+              tabs={transferScopeTabs}
+              size="small"
+              accentProgress={accentProgress}
+              selectedTab={scope}
+              onTabPress={(nextScope) => {
+                setScope(nextScope as TransferScope);
+              }}
+            />
+          </View>
+        )}
         <View style={{ flex: 1, width: "100%" }}>
           <Stack
             screenOptions={{
@@ -80,9 +85,9 @@ export default function TransferLayout() {
           >
             <Stack.Screen name="send" />
             <Stack.Screen name="receive" />
+            <Stack.Screen name="progress" />
           </Stack>
         </View>
-        <KeyboardSpacer />
       </View>
     </TransferProvider>
   );
