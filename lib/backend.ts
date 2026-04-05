@@ -19,7 +19,7 @@ export interface TransferReceipt {
 
 export type FaucetTarget = "eoa" | "unlink";
 
-const DEFAULT_BACKEND_URL = "http://10.105.175.125:3001";
+const DEFAULT_BACKEND_URL = "https://api.blindapp.space";
 
 function getBackendUrl() {
   return DEFAULT_BACKEND_URL;
