@@ -86,6 +86,8 @@ export default function TransferPage({ action }: { action: TransferAction }) {
     scope === "private"
       ? "unlink1qq80r8m2k3v8n6s5u7x4p9z2f3j6c1a5w0yq"
       : "0x7E57B1Ff9A0D13C4E5f67890123456789AbCdEf0";
+  const accentColor =
+    scope === "private" ? colors.primary[500] : colors.neutral[100];
 
   return (
     <Animated.View
@@ -132,7 +134,8 @@ export default function TransferPage({ action }: { action: TransferAction }) {
                       setIsAmountFocused(false);
                     }}
                     keyboardType="decimal-pad"
-                    cursorColor={colors.primary[500]}
+                    cursorColor={accentColor}
+                    selectionColor={accentColor}
                     placeholder={isAmountFocused ? "" : "0.00"}
                     placeholderTextColor={colors.neutral[500]}
                     style={[
@@ -174,7 +177,9 @@ export default function TransferPage({ action }: { action: TransferAction }) {
             <View style={{ paddingBottom: 24 }}>
               <Input
                 accentProgress={accentProgress}
+                cursorColor={accentColor}
                 placeholder={addressPlaceholder}
+                selectionColor={accentColor}
                 onFocus={() => {
                   setActiveKeyboardTarget("address");
                 }}
