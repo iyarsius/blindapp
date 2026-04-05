@@ -24,9 +24,7 @@ function AppContent() {
         <SafeAreaView
           style={{ flex: 1, backgroundColor: colors.background[900] }}
         >
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="index" />
-          </Stack>
+          <Stack screenOptions={{ headerShown: false, animation: "none" }} />
         </SafeAreaView>
       </TouchableWithoutFeedback>
     </SafeAreaProvider>
