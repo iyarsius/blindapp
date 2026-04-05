@@ -2,9 +2,10 @@ import { useThemeColors } from "@/theme/useThemColors";
 import { fontStyle } from "@/theme/utils";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
+  cancelAnimation,
   Easing,
   interpolate,
   runOnJS,
@@ -32,14 +33,27 @@ export default function BottomSheet({
   const [isMounted, setIsMounted] = useState(visible);
   const progress = useSharedValue(visible ? 1 : 0);
   const dragY = useSharedValue(0);
+  const openFrameRef = useRef<number | null>(null);
 
   useEffect(() => {
+    if (openFrameRef.current !== null) {
+      cancelAnimationFrame(openFrameRef.current);
+      openFrameRef.current = null;
+    }
+
+    cancelAnimation(progress);
+    cancelAnimation(dragY);
+
     if (visible) {
       setIsMounted(true);
       dragY.value = 0;
-      progress.value = withTiming(1, {
-        duration: 240,
-        easing: Easing.out(Easing.cubic),
+      progress.value = 0;
+      openFrameRef.current = requestAnimationFrame(() => {
+        progress.value = withTiming(1, {
+          duration: 240,
+          easing: Easing.out(Easing.cubic),
+        });
+        openFrameRef.current = null;
       });
       return;
     }
@@ -56,10 +70,23 @@ export default function BottomSheet({
         }
       },
     );
+
+    return () => {
+      if (openFrameRef.current !== null) {
+        cancelAnimationFrame(openFrameRef.current);
+        openFrameRef.current = null;
+      }
+      cancelAnimation(progress);
+      cancelAnimation(dragY);
+    };
   }, [dragY, progress, visible]);
 
   const closeSheet = () => {
     dragY.value = 0;
+    onClose();
+  };
+
+  const closeSheetFromGesture = () => {
     onClose();
   };
 
@@ -71,7 +98,7 @@ export default function BottomSheet({
       const shouldClose = event.translationY > 120 || event.velocityY > 900;
 
       if (shouldClose) {
-        runOnJS(closeSheet)();
+        runOnJS(closeSheetFromGesture)();
         return;
       }
 
@@ -104,6 +131,7 @@ export default function BottomSheet({
 
   return (
     <Modal
+      hardwareAccelerated
       transparent
       visible={isMounted}
       animationType="none"

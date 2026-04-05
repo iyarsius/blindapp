@@ -1,10 +1,13 @@
 import { useEffect } from "react";
 import Animated, {
+  cancelAnimation,
   Easing,
   interpolate,
   interpolateColor,
   useAnimatedStyle,
   useSharedValue,
+  withRepeat,
+  withSequence,
   withSpring,
   withTiming,
 } from "react-native-reanimated";
@@ -13,11 +16,17 @@ import { useThemeColors } from "@/theme/useThemColors";
 export interface LogoProps {
   state: "fragmented" | "normal";
   rotated?: boolean;
+  attractAttention?: boolean;
 }
 
-export default function Logo({ rotated, state }: LogoProps) {
+export default function Logo({
+  rotated,
+  state,
+  attractAttention = false,
+}: LogoProps) {
   const colors = useThemeColors();
   const rotation = useSharedValue(rotated ? 180 : 0);
+  const jiggle = useSharedValue(0);
   const fragmentProgress = useSharedValue(state === "fragmented" ? 1 : 0);
   const fragmentProgressColor = useSharedValue(state === "fragmented" ? 1 : 0);
 
@@ -39,12 +48,37 @@ export default function Logo({ rotated, state }: LogoProps) {
       duration: 600,
       easing: Easing.out(Easing.cubic),
     });
-  }, [fragmentProgress, state]);
+  }, [fragmentProgress, fragmentProgressColor, state]);
+
+  useEffect(() => {
+    if (!attractAttention) {
+      cancelAnimation(jiggle);
+      jiggle.value = withTiming(0, { duration: 120 });
+      return;
+    }
+
+    jiggle.value = withRepeat(
+      withSequence(
+        withTiming(0, { duration: 1800 }),
+        withTiming(-8, { duration: 90, easing: Easing.out(Easing.cubic) }),
+        withTiming(8, { duration: 120, easing: Easing.inOut(Easing.cubic) }),
+        withTiming(-5, { duration: 100, easing: Easing.inOut(Easing.cubic) }),
+        withTiming(5, { duration: 100, easing: Easing.inOut(Easing.cubic) }),
+        withTiming(0, { duration: 120, easing: Easing.out(Easing.cubic) }),
+      ),
+      -1,
+      false,
+    );
+  }, [attractAttention, jiggle]);
 
   const animatedStyle = useAnimatedStyle(() => {
     return {
       columnGap: interpolate(fragmentProgress.value, [0, 1], [0, 20]),
-      transform: [{ perspective: 800 }, { rotateX: `${rotation.value}deg` }],
+      transform: [
+        { perspective: 800 },
+        { rotateX: `${rotation.value}deg` },
+        { rotateZ: `${jiggle.value}deg` },
+      ],
     };
   });
 
