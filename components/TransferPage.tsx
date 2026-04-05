@@ -112,14 +112,18 @@ export default function TransferPage({ action }: { action: TransferAction }) {
   const accentColor =
     scope === "private" ? colors.primary[500] : colors.neutral[100];
   const selectedTokenBalance = selectedToken
-    ? privateBalancesByToken[selectedToken.address.toLowerCase()] ?? "0"
+    ? (privateBalancesByToken[selectedToken.address.toLowerCase()] ?? "0")
     : "0";
-  const insufficientBalanceError = "Amount exceeds the available private balance.";
+  const insufficientBalanceError =
+    "Amount exceeds the available private balance.";
   let amountError: string | null = null;
 
   if (selectedToken && amount.trim().length > 0) {
     try {
-      const amountBaseUnits = parseAmountToBaseUnits(amount, selectedToken.decimals);
+      const amountBaseUnits = parseAmountToBaseUnits(
+        amount,
+        selectedToken.decimals,
+      );
 
       if (BigInt(amountBaseUnits) > BigInt(selectedTokenBalance)) {
         amountError = insufficientBalanceError;
@@ -145,7 +149,10 @@ export default function TransferPage({ action }: { action: TransferAction }) {
 
     try {
       const trimmedRecipient = recipient.trim();
-      const amountBaseUnits = parseAmountToBaseUnits(amount, selectedToken.decimals);
+      const amountBaseUnits = parseAmountToBaseUnits(
+        amount,
+        selectedToken.decimals,
+      );
 
       if (BigInt(amountBaseUnits) <= 0n) {
         throw new Error("Amount must be greater than zero.");
@@ -172,7 +179,9 @@ export default function TransferPage({ action }: { action: TransferAction }) {
       });
       router.push("/progress");
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : "Unable to prepare transfer.");
+      setFormError(
+        error instanceof Error ? error.message : "Unable to prepare transfer.",
+      );
     }
   }
 
@@ -404,11 +413,7 @@ export default function TransferPage({ action }: { action: TransferAction }) {
                   void requestTestTokens(scope);
                 }}
               >
-                {faucetState.status === "running"
-                  ? "Requesting TEST..."
-                  : scope === "private"
-                    ? "Faucet TEST to private"
-                    : "Faucet TEST to public"}
+                Faucet TEST
               </Button>
               {faucetState.status === "succeeded" ? (
                 <Text
@@ -505,7 +510,8 @@ export default function TransferPage({ action }: { action: TransferAction }) {
                         { color: colors.neutral[500] },
                       ]}
                     >
-                      Private balance: {formatBaseUnits(balance, token.decimals)} {token.symbol}
+                      Private balance:{" "}
+                      {formatBaseUnits(balance, token.decimals)} {token.symbol}
                     </Text>
                   </Pressable>
                 );
