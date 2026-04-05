@@ -19,6 +19,7 @@ export default function Logo({ rotated, state }: LogoProps) {
   const colors = useThemeColors();
   const rotation = useSharedValue(rotated ? 180 : 0);
   const fragmentProgress = useSharedValue(state === "fragmented" ? 1 : 0);
+  const fragmentProgressColor = useSharedValue(state === "fragmented" ? 1 : 0);
 
   useEffect(() => {
     rotation.value = withSpring(rotated ? 180 : 0, {
@@ -31,6 +32,11 @@ export default function Logo({ rotated, state }: LogoProps) {
   useEffect(() => {
     fragmentProgress.value = withTiming(state === "fragmented" ? 1 : 0, {
       duration: 250,
+      easing: Easing.out(Easing.cubic),
+    });
+
+    fragmentProgressColor.value = withTiming(state === "fragmented" ? 1 : 0, {
+      duration: 600,
       easing: Easing.out(Easing.cubic),
     });
   }, [fragmentProgress, state]);

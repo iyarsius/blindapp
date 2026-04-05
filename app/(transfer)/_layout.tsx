@@ -9,7 +9,7 @@ import {
   TransferScope,
 } from "@/constants/transfer";
 import { useThemeColors } from "@/theme/useThemColors";
-import { Slot, usePathname, useRouter } from "expo-router";
+import { Stack, usePathname, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, View } from "react-native";
 import { Easing, useSharedValue, withTiming } from "react-native-reanimated";
@@ -24,7 +24,7 @@ export default function TransferLayout() {
 
   useEffect(() => {
     accentProgress.value = withTiming(scope === "private" ? 1 : 0, {
-      duration: 250,
+      duration: 600,
       easing: Easing.out(Easing.cubic),
     });
   }, [accentProgress, scope]);
@@ -36,13 +36,15 @@ export default function TransferLayout() {
           flex: 1,
           backgroundColor: colors.background[900],
           paddingHorizontal: 12,
-          paddingTop: 30,
+          paddingTop: 50,
           alignItems: "center",
         }}
       >
         <Pressable
           onPress={() => {
-            router.replace(buildTransferRoute(action === "send" ? "receive" : "send"));
+            router.replace(
+              buildTransferRoute(action === "send" ? "receive" : "send"),
+            );
           }}
         >
           <Logo
@@ -51,7 +53,12 @@ export default function TransferLayout() {
           />
         </Pressable>
         <View
-          style={{ width: "100%", paddingHorizontal: 100, paddingTop: 40, gap: 16 }}
+          style={{
+            width: "100%",
+            paddingHorizontal: 100,
+            paddingTop: 50,
+            gap: 16,
+          }}
         >
           <TabSelector
             tabs={transferScopeTabs}
@@ -64,7 +71,16 @@ export default function TransferLayout() {
           />
         </View>
         <View style={{ flex: 1, width: "100%" }}>
-          <Slot />
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              animation: "fade",
+              contentStyle: { backgroundColor: "transparent" },
+            }}
+          >
+            <Stack.Screen name="send" />
+            <Stack.Screen name="receive" />
+          </Stack>
         </View>
         <KeyboardSpacer />
       </View>
