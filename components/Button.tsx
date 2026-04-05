@@ -14,6 +14,7 @@ export interface ButtonParams {
   onPress: () => void;
   backgroundColor?: string;
   accentProgress?: SharedValue<number>;
+  disabled?: boolean;
 }
 
 export default function Button({
@@ -21,6 +22,7 @@ export default function Button({
   onPress,
   backgroundColor,
   accentProgress,
+  disabled = false,
 }: ButtonParams) {
   const colors = useThemeColors();
   const animatedStyle = useAnimatedStyle(() => {
@@ -45,12 +47,14 @@ export default function Button({
           height: 52,
           borderRadius: 24,
           backgroundColor: backgroundColor ?? colors.primary[500],
+          opacity: disabled ? 0.45 : 1,
           alignItems: "center",
           justifyContent: "center",
         },
         animatedStyle,
       ]}
       onPress={onPress}
+      disabled={disabled}
     >
       <Text
         style={[fontStyle("textBold", "giant"), { color: colors.primary[900] }]}

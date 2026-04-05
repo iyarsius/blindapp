@@ -2,16 +2,19 @@ import BottomSheet from "@/components/BottomSheet";
 import Button from "@/components/Button";
 import CopyAddressButton from "@/components/CopyAddressButton";
 import Input from "@/components/Input";
+import KeyboardSpacer from "@/components/KeyboardSpacer";
 import ReceiveQRCode from "@/components/ReceiveQRCode";
 import TokenSelector from "@/components/TokenSelector";
 import { useTransferContext } from "@/components/TransferContext";
+import { useWalletContext } from "@/components/WalletContext";
 import { TransferAction } from "@/constants/transfer";
 import { useThemeColors } from "@/theme/useThemColors";
 import { fontStyle } from "@/theme/utils";
-import { useRouter } from "expo-router";
+import { formatBaseUnits, parseAmountToBaseUnits } from "@/utils/tokenAmount";
 import { useIsFocused } from "@react-navigation/native";
+import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { Text, TextInput, View } from "react-native";
+import { Pressable, Text, TextInput, View } from "react-native";
 import Animated, {
   Easing,
   ReduceMotion,
@@ -20,15 +23,29 @@ import Animated, {
   withSpring,
   withTiming,
 } from "react-native-reanimated";
-import KeyboardSpacer from "@/components/KeyboardSpacer";
 
 export default function TransferPage({ action }: { action: TransferAction }) {
   const colors = useThemeColors();
   const router = useRouter();
   const { scope, accentProgress } = useTransferContext();
+  const {
+    isInitializing,
+    walletError,
+    privateAddress,
+    publicAddress,
+    tokens,
+    selectedToken,
+    privateBalancesByToken,
+    faucetState,
+    setSelectedToken,
+    requestTestTokens,
+    queueTransfer,
+  } = useWalletContext();
   const isFocused = useIsFocused();
   const [isTokenSheetVisible, setIsTokenSheetVisible] = useState(false);
   const [amount, setAmount] = useState("");
+  const [recipient, setRecipient] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
   const [isAmountFocused, setIsAmountFocused] = useState(false);
   const [activeKeyboardTarget, setActiveKeyboardTarget] = useState<
     "amount" | "address" | null
@@ -36,7 +53,6 @@ export default function TransferPage({ action }: { action: TransferAction }) {
   const opacity = useSharedValue(isFocused ? 1 : 0);
   const scale = useSharedValue(isFocused ? 1 : 0.96);
   const translateY = useSharedValue(isFocused ? 0 : 14);
-  const tokenTicker = "ETH";
 
   const handleAmountChange = useCallback((value: string) => {
     const sanitized = value.replace(",", ".").replace(/[^\d.]/g, "");
@@ -45,6 +61,7 @@ export default function TransferPage({ action }: { action: TransferAction }) {
       return;
     }
 
+    setFormError(null);
     setAmount(sanitized);
   }, []);
 
@@ -82,12 +99,73 @@ export default function TransferPage({ action }: { action: TransferAction }) {
     scope === "private"
       ? "unlink1... destination address"
       : "0x destination address";
-  const receiveAddress =
-    scope === "private"
-      ? "unlink1qq80r8m2k3v8n6s5u7x4p9z2f3j6c1a5w0yq"
-      : "0x7E57B1Ff9A0D13C4E5f67890123456789AbCdEf0";
+  const receiveAddress = scope === "private" ? privateAddress : publicAddress;
   const accentColor =
     scope === "private" ? colors.primary[500] : colors.neutral[100];
+  const selectedTokenBalance = selectedToken
+    ? privateBalancesByToken[selectedToken.address.toLowerCase()] ?? "0"
+    : "0";
+  const insufficientBalanceError = "Amount exceeds the available private balance.";
+  let amountError: string | null = null;
+
+  if (selectedToken && amount.trim().length > 0) {
+    try {
+      const amountBaseUnits = parseAmountToBaseUnits(amount, selectedToken.decimals);
+
+      if (BigInt(amountBaseUnits) > BigInt(selectedTokenBalance)) {
+        amountError = insufficientBalanceError;
+      }
+    } catch {
+      amountError = null;
+    }
+  }
+
+  const submitDisabled =
+    isInitializing ||
+    Boolean(walletError) ||
+    !selectedToken ||
+    amount.trim().length === 0 ||
+    recipient.trim().length === 0 ||
+    Boolean(amountError);
+
+  function handleSendPress() {
+    if (!selectedToken) {
+      setFormError("No token is available yet.");
+      return;
+    }
+
+    try {
+      const trimmedRecipient = recipient.trim();
+      const amountBaseUnits = parseAmountToBaseUnits(amount, selectedToken.decimals);
+
+      if (BigInt(amountBaseUnits) <= 0n) {
+        throw new Error("Amount must be greater than zero.");
+      }
+
+      if (BigInt(amountBaseUnits) > BigInt(selectedTokenBalance)) {
+        throw new Error(insufficientBalanceError);
+      }
+
+      if (scope === "private" && !trimmedRecipient.startsWith("unlink")) {
+        throw new Error("Private transfers require an `unlink1...` address.");
+      }
+
+      if (scope === "public" && !/^0x[a-fA-F0-9]{40}$/.test(trimmedRecipient)) {
+        throw new Error("Public transfers require a valid EVM address.");
+      }
+
+      queueTransfer({
+        scope,
+        recipient: trimmedRecipient,
+        amountInput: amount,
+        amountBaseUnits,
+        token: selectedToken,
+      });
+      router.push("/progress");
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : "Unable to prepare transfer.");
+    }
+  }
 
   return (
     <Animated.View
@@ -114,7 +192,12 @@ export default function TransferPage({ action }: { action: TransferAction }) {
                     { color: colors.neutral[700] },
                   ]}
                 >
-                  Available: 0.5016 ETH
+                  {isInitializing
+                    ? "Preparing wallet..."
+                    : `Available: ${formatBaseUnits(
+                        selectedTokenBalance,
+                        selectedToken?.decimals ?? 18,
+                      )} ${selectedToken?.symbol ?? ""}`}
                 </Text>
                 <View
                   style={{
@@ -132,6 +215,7 @@ export default function TransferPage({ action }: { action: TransferAction }) {
                     }}
                     onBlur={() => {
                       setIsAmountFocused(false);
+                      setActiveKeyboardTarget(null);
                     }}
                     keyboardType="decimal-pad"
                     cursorColor={accentColor}
@@ -156,10 +240,12 @@ export default function TransferPage({ action }: { action: TransferAction }) {
               </View>
               <View style={{ paddingTop: 16 }}>
                 <TokenSelector
-                  ticker={tokenTicker}
+                  ticker={selectedToken?.symbol ?? "..."}
                   accentProgress={accentProgress}
                   onPress={() => {
-                    setIsTokenSheetVisible(true);
+                    if (tokens.length > 0) {
+                      setIsTokenSheetVisible(true);
+                    }
                   }}
                 />
               </View>
@@ -180,17 +266,39 @@ export default function TransferPage({ action }: { action: TransferAction }) {
                 cursorColor={accentColor}
                 placeholder={addressPlaceholder}
                 selectionColor={accentColor}
+                value={recipient}
+                onChangeText={(value) => {
+                  setFormError(null);
+                  setRecipient(value);
+                }}
                 onFocus={() => {
                   setActiveKeyboardTarget("address");
                 }}
+                onBlur={() => {
+                  setActiveKeyboardTarget(null);
+                }}
+                autoCapitalize="none"
+                autoCorrect={false}
               />
             </View>
+            {walletError || formError || amountError ? (
+              <Text
+                style={[
+                  fontStyle("text", "small"),
+                  {
+                    color: colors.primary[300],
+                    paddingBottom: 16,
+                  },
+                ]}
+              >
+                {walletError ?? formError ?? amountError}
+              </Text>
+            ) : null}
             <KeyboardSpacer enabled={activeKeyboardTarget === "address"} />
             <Button
               accentProgress={accentProgress}
-              onPress={() => {
-                router.push("/progress");
-              }}
+              disabled={submitDisabled}
+              onPress={handleSendPress}
             >
               Send
             </Button>
@@ -207,25 +315,72 @@ export default function TransferPage({ action }: { action: TransferAction }) {
               paddingHorizontal: 24,
             }}
           >
-            <ReceiveQRCode
-              address={receiveAddress}
-              scope={scope}
-              accentProgress={accentProgress}
-            />
+            {receiveAddress ? (
+              <ReceiveQRCode
+                address={receiveAddress}
+                scope={scope}
+                accentProgress={accentProgress}
+              />
+            ) : (
+              <Text
+                style={[
+                  fontStyle("text", "medium"),
+                  { color: colors.neutral[300], textAlign: "center" },
+                ]}
+              >
+                {walletError ?? "Preparing your wallet address..."}
+              </Text>
+            )}
           </View>
 
-          <View
-            style={{
-              width: "100%",
-              paddingHorizontal: 16,
-              paddingBottom: 24,
-            }}
-          >
-            <CopyAddressButton
-              address={receiveAddress}
-              accentProgress={accentProgress}
-            />
-          </View>
+          {receiveAddress ? (
+            <View
+              style={{
+                width: "100%",
+                paddingHorizontal: 16,
+                paddingBottom: 24,
+                gap: 12,
+              }}
+            >
+              <Button
+                accentProgress={accentProgress}
+                disabled={isInitializing || faucetState.status === "running"}
+                onPress={() => {
+                  void requestTestTokens(scope);
+                }}
+              >
+                {faucetState.status === "running"
+                  ? "Requesting TEST..."
+                  : scope === "private"
+                    ? "Faucet TEST to private"
+                    : "Faucet TEST to public"}
+              </Button>
+              {faucetState.status === "succeeded" ? (
+                <Text
+                  style={[
+                    fontStyle("text", "small"),
+                    { color: colors.neutral[300], textAlign: "center" },
+                  ]}
+                >
+                  TEST tokens requested successfully.
+                </Text>
+              ) : null}
+              {faucetState.status === "failed" ? (
+                <Text
+                  style={[
+                    fontStyle("text", "small"),
+                    { color: colors.primary[300], textAlign: "center" },
+                  ]}
+                >
+                  {faucetState.error}
+                </Text>
+              ) : null}
+              <CopyAddressButton
+                address={receiveAddress}
+                accentProgress={accentProgress}
+              />
+            </View>
+          ) : null}
         </>
       )}
 
@@ -237,14 +392,71 @@ export default function TransferPage({ action }: { action: TransferAction }) {
             setIsTokenSheetVisible(false);
           }}
         >
-          <Text
-            style={[
-              fontStyle("text", "medium"),
-              { color: colors.neutral[300] },
-            ]}
-          >
-            Token list coming next.
-          </Text>
+          {tokens.length === 0 ? (
+            <Text
+              style={[
+                fontStyle("text", "medium"),
+                { color: colors.neutral[300] },
+              ]}
+            >
+              Loading tokens...
+            </Text>
+          ) : (
+            <View style={{ gap: 10 }}>
+              {tokens.map((token) => {
+                const isSelected = selectedToken?.address === token.address;
+                const balance =
+                  privateBalancesByToken[token.address.toLowerCase()] ?? "0";
+
+                return (
+                  <Pressable
+                    key={token.address}
+                    accessibilityRole="button"
+                    onPress={() => {
+                      setSelectedToken(token);
+                      setIsTokenSheetVisible(false);
+                    }}
+                    style={{
+                      borderWidth: 1,
+                      borderColor: isSelected
+                        ? colors.primary[500]
+                        : colors.neutral[700],
+                      borderRadius: 20,
+                      paddingHorizontal: 16,
+                      paddingVertical: 14,
+                      backgroundColor: colors.background[900],
+                      gap: 4,
+                    }}
+                  >
+                    <Text
+                      style={[
+                        fontStyle("textBold", "medium"),
+                        { color: colors.neutral[100] },
+                      ]}
+                    >
+                      {token.symbol}
+                    </Text>
+                    <Text
+                      style={[
+                        fontStyle("text", "small"),
+                        { color: colors.neutral[300] },
+                      ]}
+                    >
+                      {token.name}
+                    </Text>
+                    <Text
+                      style={[
+                        fontStyle("text", "small"),
+                        { color: colors.neutral[500] },
+                      ]}
+                    >
+                      Private balance: {formatBaseUnits(balance, token.decimals)} {token.symbol}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
         </BottomSheet>
       ) : null}
     </Animated.View>
