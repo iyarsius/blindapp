@@ -18,7 +18,7 @@ export default function TransferLayout() {
   const router = useRouter();
   const pathname = usePathname();
   const currentRoute = pathname.split("/").at(-1);
-  const isProgressScreen = currentRoute === "progress";
+  const isStatusScreen = currentRoute === "progress" || currentRoute === "success";
   const action = normalizeTransferAction(currentRoute);
   const [scope, setScope] = useState<TransferScope>("public");
   const accentProgress = useSharedValue(scope === "private" ? 1 : 0);
@@ -44,7 +44,7 @@ export default function TransferLayout() {
         <Pressable
           onPress={() => {
             router.replace(
-              isProgressScreen
+              isStatusScreen
                 ? buildTransferRoute("send")
                 : buildTransferRoute(action === "send" ? "receive" : "send"),
             );
@@ -55,7 +55,7 @@ export default function TransferLayout() {
             state={scope === "private" ? "fragmented" : "normal"}
           />
         </Pressable>
-        {isProgressScreen ? null : (
+        {isStatusScreen ? null : (
           <View
             style={{
               width: "100%",
@@ -86,6 +86,7 @@ export default function TransferLayout() {
             <Stack.Screen name="send" />
             <Stack.Screen name="receive" />
             <Stack.Screen name="progress" />
+            <Stack.Screen name="success" />
           </Stack>
         </View>
       </View>

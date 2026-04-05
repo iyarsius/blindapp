@@ -3,7 +3,7 @@ import { useThemeColors } from "@/theme/useThemColors";
 import { fontStyle } from "@/theme/utils";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import Animated, {
   Easing,
   ReduceMotion,
@@ -123,6 +123,10 @@ export default function TransferProgressScreen() {
   const [statusIndex, setStatusIndex] = useState(0);
 
   useEffect(() => {
+    const completionTimeoutId = setTimeout(() => {
+      router.replace("/success");
+    }, 6200);
+
     pulse.value = withRepeat(
       withSequence(
         withTiming(1, {
@@ -176,6 +180,7 @@ export default function TransferProgressScreen() {
     }, 2400);
 
     return () => {
+      clearTimeout(completionTimeoutId);
       cancelAnimation(pulse);
       cancelAnimation(drift);
       cancelAnimation(statusOpacity);
@@ -184,7 +189,7 @@ export default function TransferProgressScreen() {
         clearTimeout(timeoutId);
       }
     };
-  }, [drift, pulse, statusOpacity]);
+  }, [drift, pulse, router, statusOpacity]);
 
   const animatedClusterStyle = useAnimatedStyle(() => {
     return {
